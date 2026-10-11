@@ -1,113 +1,72 @@
 "use client"
+import { useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { useRef, useState } from 'react'
-import * as THREE from 'three'
+import { Sky, ContactShadows } from '@react-three/drei'
 
-function Human({pos, rot}){
-  const ref=useRef()
-  useFrame(()=>{ if(ref.current){ ref.current.position.x=pos.x; ref.current.position.z=pos.z; ref.current.rotation.y=rot } })
+function RealRDP({pos}){
   return (
-    <group ref={ref}>
-      <mesh position={[0,0.9,0]}><capsuleGeometry args={[0.28,0.55]}/><meshStandardMaterial color="#1e90ff"/></mesh>
-      <mesh position={[0,1.55,0]}><sphereGeometry args={[0.32,16,16]}/><meshStandardMaterial color="#ffdbac"/></mesh>
-      <mesh position={[0,1.75,0.1]}><cylinderGeometry args={[0.35,0.35,0.14,16]}/><meshStandardMaterial color="black"/></mesh>
-      <mesh position={[-0.15,0.2,0]}><capsuleGeometry args={[0.11,0.45]}/><meshStandardMaterial color="#111"/></mesh>
-      <mesh position={[0.15,0.2,0]}><capsuleGeometry args={[0.11,0.45]}/><meshStandardMaterial color="#111"/></mesh>
+    <group position={pos}>
+      <mesh position={[0,0.1,0]} receiveShadow><boxGeometry args={[5,0.2,6]}/><meshStandardMaterial color="#222"/></mesh>
+      <mesh position={[0,1.1,0]} castShadow receiveShadow><boxGeometry args={[4.8,2.2,5.5]}/><meshStandardMaterial color="#d8c9b0" roughness={0.9}/></mesh>
+      <mesh position={[0,2.45,0]} castShadow><boxGeometry args={[5.3,0.2,6.2]}/><meshStandardMaterial color="#b71c1c" metalness={0.3} roughness={0.4}/></mesh>
+      <mesh position={[0,0.9,2.76]}><boxGeometry args={[1,1.8,0.1]}/><meshStandardMaterial color="#3e2723"/></mesh>
+      <mesh position={[-1.2,1.2,2.77]}><boxGeometry args={[0.9,0.9,0.05]}/><meshStandardMaterial color="#90caf9" metalness={0.9}/></mesh>
     </group>
   )
 }
 
-function House({p,c}){
-  return <group position={p}><mesh position={[0,0.9,0]}><boxGeometry args={[3,1.8,3.5]}/><meshStandardMaterial color={c}/></mesh><mesh position={[0,2,0]}><coneGeometry args={[2.2,1.1,4]} rotation={[0,0.78,0]}/><meshStandardMaterial color="#5a2f18"/></mesh></group>
-}
-
-function CameraRig({player, yaw}){
-  useFrame(({camera})=>{
-    const dist=7
-    const x = player.x + Math.sin(yaw)*dist
-    const z = player.z + Math.cos(yaw)*dist
-    camera.position.lerp(new THREE.Vector3(x, 3.5, z), 0.12)
-    camera.lookAt(player.x, 1, player.z)
+function Player({move, yaw}){
+  const ref=useRef()
+  useFrame((_,d)=>{
+    if(!ref.current) return
+    const s=4
+    // move relative to yaw
+    const fx = Math.sin(yaw) * move.y + Math.cos(yaw) * move.x
+    const fz = Math.cos(yaw) * move.y - Math.sin(yaw) * move.x
+    ref.current.position.x += fx * s * d
+    ref.current.position.z += fz * s * d
+    ref.current.rotation.y = yaw
   })
-  return null
+  return <mesh ref={ref} position={[0,1,0]} castShadow><capsuleGeometry args={[0.35,1,4,8]}/><meshStandardMaterial color="#111"/></mesh>
 }
 
 export default function KasiRPG({zone, onGoPlane}){
-  const [player,setPlayer]=useState({x:0,z:6})
-  const [rot,setRot]=useState(0)
+  const [move,setMove]=useState({x:0,y:0})
   const [yaw,setYaw]=useState(0)
-  const [inside,setInside]=useState(false)
-  const [showMap,setShowMap]=useState(false)
 
-  const move=(f,s)=>{
-    const fx=Math.sin(yaw)*f
-    const fz=Math.cos(yaw)*f
-    const sx=Math.sin(yaw+Math.PI/2)*s
-    const sz=Math.cos(yaw+Math.PI/2)*s
-    const nx=player.x+fx+sx
-    const nz=player.z+fz+sz
-    if(Math.abs(nx)<1.3 && Math.abs(nz)<1.3){ setInside(true); return }
-    setPlayer({x:nx,z:nz})
-    if(f||s) setRot(Math.atan2(fx+sx,fz+sz))
-  }
-
-  if(inside) return (
-    <div style={{height:'85vh',background:'#201506',padding:20,color:'#fff'}}>
-      <h2>🏠 RDP {zone}</h2><button onClick={()=>setInside(false)} style={{padding:12,background:'#fff',borderRadius:8}}>LEAVE</button>
-      <button onClick={onGoPlane} style={{padding:12,background:'#FFD700',marginLeft:10,borderRadius:8}}>🚕 OR TAMBO R150</button>
-    </div>
-  )
+  useEffect(()=>{
+    const L=document.getElementById('joyL'), R=document.getElementById('joyR')
+    let sx=0,sy=0, lx=0
+    const ls=(e)=>{ sx=e.touches[0].clientX; sy=e.touches[0].clientY }
+    const lm=(e)=>{
+      let dx=(e.touches[0].clientX-sx)/40, dy=(e.touches[0].clientY-sy)/40
+      dx=Math.max(-1,Math.min(1,dx)); dy=Math.max(-1,Math.min(1,dy))
+      setMove({x:dx,y:-dy})
+    }
+    const le=()=>setMove({x:0,y:0})
+    const rs=(e)=>{ lx=e.touches[0].clientX }
+    const rm=(e)=>{ const dx=e.touches[0].clientX-lx; setYaw(y=>y - dx*0.02); lx=e.touches[0].clientX }
+    L.addEventListener('touchstart',ls); L.addEventListener('touchmove',lm); L.addEventListener('touchend',le)
+    R.addEventListener('touchstart',rs); R.addEventListener('touchmove',rm)
+    return()=>{ L.removeEventListener('touchstart',ls); L.removeEventListener('touchmove',lm); L.removeEventListener('touchend',le); R.removeEventListener('touchstart',rs); R.removeEventListener('touchmove',rm) }
+  },[])
 
   return (
-    <div style={{height:'88vh',width:'100%',position:'relative',background:'#87CEEB',overflow:'hidden'}}>
-      <Canvas>
-        <ambientLight intensity={1.3}/><directionalLight position={[10,15,8]} intensity={1}/>
-        <mesh rotation={[-Math.PI/2,0,0]}><planeGeometry args={[200,200]}/><meshStandardMaterial color="#d2a679"/></mesh>
-        <mesh rotation={[-Math.PI/2,0,0]} position={[0,0.02,0]}><planeGeometry args={[8,200]}/><meshStandardMaterial color="#222"/></mesh>
-        <House p={[0,0,0]} c="#c97a3a"/><House p={[5,0,3]} c="#a05a2a"/><House p={[-5,0,2]} c="#8B4513"/><House p={[4,0,-5]} c="#b87a4a"/><House p={[-6,0,-4]} c="#9c5a2a"/><House p={[9,0,-1]} c="#7a4a2a"/>
-        <Human pos={player} rot={rot}/>
-        <CameraRig player={player} yaw={yaw}/>
+    <div style={{width:'100%',height:'100vh',position:'relative'}}>
+      <Canvas shadows camera={{position:[0,8,10],fov:55}}>
+        <Sky sunPosition={[100,20,50]} />
+        <ambientLight intensity={0.7}/>
+        <directionalLight castShadow position={[10,20,10]} intensity={1.3} shadow-mapSize={[2048,2048]}/>
+        <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[200,200]}/><meshStandardMaterial color="#4a3c2a"/></mesh>
+        <RealRDP pos={[0,0,-10]}/><RealRDP pos={[8,0,-10]}/><RealRDP pos={[-8,0,-10]}/><RealRDP pos={[0,0,-18]}/><RealRDP pos={[8,0,-18]}/>
+        <Player move={move} yaw={yaw}/>
+        <ContactShadows scale={40} blur={2} opacity={0.6}/>
       </Canvas>
-
-      {showMap && (
-        <div style={{position:'absolute',inset:0,zIndex:30,background:'#000'}}>
-          <iframe title="Ga-Rankuwa Map" width="100%" height="100%" frameBorder="0" style={{border:0}} src="https://www.openstreetmap.org/export/embed.html?bbox=27.94%2C-25.64%2C28.03%2C-25.58&layer=mapnik&marker=-25.61%2C27.985" />
-          <button onClick={()=>setShowMap(false)} style={{position:'absolute',top:10,left:10,padding:12,background:'#fff',borderRadius:8,fontWeight:'bold'}}>✕ CLOSE REAL MAP</button>
-          <a href="https://www.google.com/maps/search/Ga-Rankuwa/" target="_blank" style={{position:'absolute',bottom:20,left:10,background:'#4285F4',color:'#fff',padding:12,borderRadius:8,textDecoration:'none'}}>Open in Google Maps</a>
-        </div>
-      )}
-
-      <div style={{position:'absolute',top:8,left:8,background:'rgba(0,0,0,0.75)',color:'#fff',padding:6,borderRadius:6,fontSize:10}}>PUBG: ▲ goes where camera looks | Drag right to rotate</div>
-      <button onClick={()=>setShowMap(true)} style={{position:'absolute',top:8,right:8,background:'#4285F4',color:'#fff',padding:8,borderRadius:8,fontSize:11,fontWeight:'bold'}}>🗺️ REAL Ga-Rankuwa Map</button>
-
-      <div style={{position:'absolute',bottom:14,left:14,display:'grid',gridTemplateColumns:'repeat(3,60px)',gridTemplateRows:'repeat(3,46px)',gap:6}}>
-        <div/><button onTouchStart={e=>{e.preventDefault(); move(-0.9,0)}} onMouseDown={()=>move(-0.9,0)} style={{background:'#fff',borderRadius:12,fontWeight:'bold'}}>▲</button><div/>
-        <button onTouchStart={e=>{e.preventDefault(); move(0,-0.8)}} onMouseDown={()=>move(0,-0.8)} style={{background:'#fff',borderRadius:12}}>◀</button>
-        <div style={{background:'rgba(0,0,0,0.5)',borderRadius:12,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff'}}>●</div>
-        <button onTouchStart={e=>{e.preventDefault(); move(0,0.8)}} onMouseDown={()=>move(0,0.8)} style={{background:'#fff',borderRadius:12}}>▶</button>
-        <div/><button onTouchStart={e=>{e.preventDefault(); move(0.9,0)}} onMouseDown={()=>move(0.9,0)} style={{background:'#ddd',borderRadius:12}}>▼</button><div/>
+      <div id="joyL" style={{position:'absolute',left:15,bottom:25,width:130,height:130,borderRadius:65,background:'rgba(255,255,255,0.15)',border:'2px solid rgba(255,255,255,0.4)',display:'flex',alignItems:'center',justifyContent:'center'}}>
+        <div style={{width:50,height:50,borderRadius:25,background:'#fff',transform:`translate(${move.x*30}px, ${-move.y*30}px)`}}/>
       </div>
-
-      {/* RIGHT STICK - CAMERA */}
-      <div
-        onTouchMove={e=>{
-          const t=e.touches[0]; if(!t) return
-          setYaw(y=> y - (t.movementX||2)*0.02)
-        }}
-        onTouchStart={e=>{
-          let lastX=e.touches[0].clientX
-          const handle=(ev)=>{
-            const x=ev.touches[0].clientX
-            setYaw(y=> y - (x-lastX)*0.02)
-            lastX=x
-          }
-          window.addEventListener('touchmove',handle)
-          window.addEventListener('touchend',()=>window.removeEventListener('touchmove',handle),{once:true})
-        }}
-        style={{position:'absolute',bottom:14,right:14,width:130,height:130,background:'rgba(255,255,255,0.2)',border:'2px dashed #fff',borderRadius:20,display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:11,textAlign:'center'}}
-      >DRAG TO<br/>ROTATE CAM<br/>👁️<br/>PUBG</div>
-
-      <button onClick={onGoPlane} style={{position:'absolute',bottom:160,right:14,background:'#FFD700',padding:12,borderRadius:10,fontWeight:'bold'}}>🚕 OR TAMBO</button>
+      <div id="joyR" style={{position:'absolute',right:15,bottom:25,width:130,height:130,borderRadius:65,background:'rgba(255,255,255,0.08)',border:'2px dashed rgba(255,255,255,0.3)',display:'flex',alignItems:'center',justifyContent:'center',color:'#fff',fontSize:10}}>ROTATE</div>
+      <button onClick={onGoPlane} style={{position:'absolute',top:20,right:20,padding:14,background:'#fff',color:'#000',borderRadius:12,fontWeight:'bold'}}>✈️ AIRPORT</button>
     </div>
   )
     }
