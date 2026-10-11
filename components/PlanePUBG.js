@@ -1,62 +1,27 @@
 "use client"
-import { Canvas } from '@react-three/fiber'
-import { OrbitControls, Environment, ContactShadows } from '@react-three/drei'
 import { useState } from 'react'
-
-function PlaneFixed(){
-  return (
-    <group position={[0,0.5,0]}>
-      {/* FUSELAGE - now lying flat, not standing */}
-      <mesh position={[0,0,0]} rotation={[Math.PI/2,0,0]} castShadow>
-        <capsuleGeometry args={[0.9,6.5,4,24]} />
-        <meshStandardMaterial color="white" roughness={0.15} metalness={0.3} />
-      </mesh>
-      {/* NOSE */}
-      <mesh position={[0,0,-4]} castShadow>
-        <sphereGeometry args={[0.9,16,16]} />
-        <meshStandardMaterial color="black" metalness={0.9} roughness={0.1} />
-      </mesh>
-      {/* WINGS attached */}
-      <mesh position={[0,-0.4,0]} castShadow>
-        <boxGeometry args={[11,0.2,2.5]} />
-        <meshStandardMaterial color="white" roughness={0.2} />
-      </mesh>
-      {/* ENGINES */}
-      <mesh position={[2.3,-0.8,0]} rotation={[0,0,Math.PI/2]} castShadow>
-        <cylinderGeometry args={[0.45,0.45,1.6,20]} />
-        <meshStandardMaterial color="#111" metalness={0.9} />
-      </mesh>
-      <mesh position={[-2.3,-0.8,0]} rotation={[0,0,Math.PI/2]} castShadow>
-        <cylinderGeometry args={[0.45,0.45,1.6,20]} />
-        <meshStandardMaterial color="#111" metalness={0.9} />
-      </mesh>
-      {/* TAIL */}
-      <mesh position={[0,0.8,3.5]} castShadow>
-        <boxGeometry args={[0.2,1.8,1.6]} />
-        <meshStandardMaterial color="white" />
-      </mesh>
-      <ContactShadows position={[0,-1.5,0]} scale={15} opacity={0.6} blur={2} />
-    </group>
-  )
-}
-
-function CabinFixed(){
-  return(
-    <group>
-      <pointLight color="#9d5cff" intensity={4} distance={10} position={[0,2,0]}/>
-      <mesh rotation={[-Math.PI/2,0,0]} position={[0,-1,0]}><planeGeometry args={[4.5,22]}/><meshStandardMaterial color="#10102a" metalness={0.8} roughness={0.2}/></mesh>
-      {[...Array(10)].map((_,i)=><mesh key={i} position={[-0.9,0.2,-8+i*1.8]}><boxGeometry args={[0.9,0.3,1.4]}/><meshStandardMaterial color="#e6e0d5"/></mesh>)}
-      {[...Array(10)].map((_,i)=><mesh key={i} position={[0.9,0.2,-8+i*1.8]}><boxGeometry args={[0.9,0.3,1.4]}/><meshStandardMaterial color="#e6e0d5"/></mesh>)}
-    </group>
-  )
-}
-
-export default function PlanePUBG(){
-  const [mode,setMode]=useState('plane')
-  return(
-    <div style={{height:'85vh',background:'#000'}}>
-      <button onClick={()=>setMode(mode==='plane'?'cabin':'plane')} style={{margin:12,padding:12,borderRadius:12,background:'#fff',fontWeight:'bold'}}>{mode==='plane'?'SHOW PURPLE CABIN':'SHOW REAL PLANE'}</button>
-      <Canvas shadows camera={{position:[6,3,6],fov:50}}><ambientLight intensity={1}/><directionalLight position={[5,10,5]} intensity={2} castShadow/><Environment preset="city"/>{mode==='plane'?<PlaneFixed/>:<CabinFixed/>}<OrbitControls/></Canvas>
+export default function PlanePUBG({onLandChina}){
+  const [jumped,setJumped]=useState(false)
+  if(jumped) return (
+    <div style={{height:'100vh',background:'linear-gradient(#87CEEB,#000)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',color:'#fff'}}>
+      <h1 style={{fontSize:50}}>🪂 PARACHUTE</h1>
+      <p>Falling to China...</p>
+      <button onClick={onLandChina} style={{marginTop:20,padding:15,background:'#fff',color:'#000',borderRadius:10}}>LAND IN CHINA 🇨🇳</button>
     </div>
   )
-        }
+  return (
+    <div style={{height:'100vh',background:'#0a0a0a',color:'#fff',position:'relative',overflow:'hidden'}}>
+      <div style={{position:'absolute',top:0,width:'100%',height:60,background:'#222',display:'flex',alignItems:'center',justifyContent:'space-between',padding:'0 20px'}}>
+        <span>HAL 9301 → ZHANGJIAJIE</span><span style={{color:'#0f0'}}>● LIVE</span>
+      </div>
+      <div style={{marginTop:80,display:'flex',flexDirection:'column',alignItems:'center'}}>
+        <div style={{width:'90%',maxWidth:500,height:300,background:'linear-gradient(#333,#111)',borderRadius:20,position:'relative',border:'2px solid #555'}}>
+          <div style={{position:'absolute',left:10,top:20,width:20,height:260,background:'#444',borderRadius:10}}/>
+          <div style={{position:'absolute',right:10,top:20,width:20,height:260,background:'#444',borderRadius:10}}/>
+          <p style={{textAlign:'center',marginTop:120}}>✈️ Inside HAL - Cabin lights on</p>
+        </div>
+        <button onClick={()=>setJumped(true)} style={{marginTop:30,padding:'20px 40px',background:'#ff0000',color:'#fff',fontSize:20,borderRadius:12,fontWeight:'bold'}}>JUMP (F)</button>
+      </div>
+    </div>
+  )
+    }
