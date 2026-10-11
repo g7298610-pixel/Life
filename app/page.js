@@ -24,14 +24,15 @@ export default function Home(){
   return(
     <div style={{background:'#0a0a0a',color:'#fff',minHeight:'100vh'}}>
       <div style={{padding:10,display:'flex',gap:8,flexWrap:'wrap',background:'#111',alignItems:'center'}}>
-        <span style={{fontSize:12}}>Born: {family.zone} | {family.surname}</span>
-        <button onClick={()=>setView('kasi')} style={{background:view==='kasi'?'#fff':'#333',color:view==='kasi'?'#000':'#fff'}}>KASI 3D</button>
-        <button onClick={()=>setView('court')} style={{background:view==='court'?'#fff':'#333',color:view==='court'?'#000':'#fff'}}>COURT</button>
-        <button onClick={()=>setView('plane')} style={{background:view==='plane'?'#fff':'#333',color:view==='plane'?'#000':'#fff'}}>PLANE → CHINA</button>
+        <span style={{fontSize:12}}>Born: {family.zone} | {family.surname} | {family.cash} Rand</span>
+        <button onClick={()=>setView('kasi')} style={{background:view==='kasi'?'#fff':'#333',color:view==='kasi'?'#000':'#fff',padding:8,borderRadius:6}}>KASI 3D</button>
+        <button onClick={()=>setView('court')} style={{background:view==='court'?'#fff':'#333',color:view==='court'?'#000':'#fff',padding:8,borderRadius:6}}>COURT</button>
+        <button onClick={()=>setView('plane')} style={{background:view==='plane'?'#fff':'#333',color:view==='plane'?'#000':'#fff',padding:8,borderRadius:6}}>PLANE → CHINA</button>
       </div>
-      {view==='plane' && <PlanePUBG/>}
+      {view==='plane' && <PlanePUBG onLandChina={()=>setView('china')}/>}
       {view==='court' && <CourtSlot/>}
-      {view==='kasi' && <KasiRPG zone={family.zone}/>}
+      {view==='kasi' && <KasiRPG zone={family.zone} onGoPlane={()=>setView('plane')}/>}
+      {view==='china' && <div style={{height:'80vh',display:'flex',justifyContent:'center',alignItems:'center',flexDirection:'column'}}><h1>🇨🇳 CHINA CITY - Coming next push</h1><button onClick={()=>setView('kasi')} style={{padding:15}}>FLY BACK TO KASI</button></div>}
     </div>
   )
-    }
+}
