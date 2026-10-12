@@ -1,7 +1,7 @@
 "use client"
 import { useRef, useState, useEffect } from 'react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { WORLD, isColliding, getNearbyTrigger, generateKasiHouses } from '@/lib/protocol'
+import { WORLD, isColliding, getNearbyTrigger, generateKasiHouses } from '../lib/protocol'
 
 const EXTRA_HOUSES = generateKasiHouses(25)
 const ALL_PLACES = [...WORLD.kasi.places.filter(p=>p.type==='house'),...EXTRA_HOUSES, WORLD.kasi.places.find(p=>p.id==='spaza'), WORLD.kasi.places.find(p=>p.id==='airport')]
