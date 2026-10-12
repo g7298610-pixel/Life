@@ -91,11 +91,12 @@ export default function KasiRPG({ onGoPlane, onGoShop }){
   },[])
 
   return (
-    <div style={{width:'100%',height:'100vh',background:'#1a1207',position:'relative'}}>
-      <Canvas shadows camera={{fov:60}}>
-        <ambientLight intensity={0.8}/>
-        <directionalLight castShadow position={[15,20,10]} intensity={1.8}/>
-        <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[200,200]}/><meshStandardMaterial color="#3a2a15"/></mesh>
+    <div style={{width:'100%',height:'100vh',background:'#87CEEB',position:'relative'}}>
+  <Canvas shadows camera={{fov:60}} style={{background:'#87CEEB'}}>
+    <ambientLight intensity={1.2}/>
+    <directionalLight castShadow position={[15,20,10]} intensity={2}/>
+    <fog attach="fog" args={['#87CEEB', 40, 120]}/>
+    <mesh rotation={[-Math.PI/2,0,0]} receiveShadow><planeGeometry args={[200,200]}/><meshStandardMaterial color="#d2b48c"/></mesh>
         {/* ROAD */}
         <mesh position={[0,0.02,30]} rotation={[-Math.PI/2,0,0]}><planeGeometry args={[8,140]}/><meshStandardMaterial color="#2b2b2b"/></mesh>
         {ALL_PLACES.map(p=><House key={p.id} p={p}/>)}
