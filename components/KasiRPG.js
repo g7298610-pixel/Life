@@ -29,11 +29,16 @@ function Player({ joy, yawRef, posRef, onTrigger }){
     let mx = Math.sin(yaw)*joy.y + Math.cos(yaw)*joy.x
     let mz = Math.cos(yaw)*joy.y - Math.sin(yaw)*joy.x
 
-    const nextPos = {
+       const nextPos = {
       x: ref.current.position.x + mx*speed*dt,
       z: ref.current.position.z - mz*speed*dt
     }
 
+    // V2: WORLD BOUNDARY - no more void
+    keepInsideWorld(nextPos)
+
+    // PROTOCOL: Check collision before moving
+    let canMove = true
     // PROTOCOL: Check collision before moving
     let canMove = true
     for(const place of ALL_PLACES){
