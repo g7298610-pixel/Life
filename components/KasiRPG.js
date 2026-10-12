@@ -42,7 +42,7 @@ function Player({ ALL_PLACES, setTrigger, controlsRef }){
       if(bodyRef.current) bodyRef.current.position.y = 1.1 + Math.abs(Math.sin(walkTime.current))*0.12
     }
 
-    const speed = 5
+    const speed = 3.5
     const nextPos = {
       x: group.current.position.x + mv.x*speed*dt,
       z: group.current.position.z - mv.z*speed*dt
