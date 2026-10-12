@@ -39,8 +39,6 @@ function Player({ joy, yawRef, posRef, onTrigger }){
 
     // PROTOCOL: Check collision before moving
     let canMove = true
-    // PROTOCOL: Check collision before moving
-    let canMove = true
     for(const place of ALL_PLACES){
       if(place.solid && isColliding(nextPos, place)){
         canMove = false
