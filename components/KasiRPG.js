@@ -20,45 +20,116 @@ function House({ p }){
   )
 }
 
-function Player({ joy, yawRef, posRef, onTrigger }){
-  const ref = useRef()
-  useFrame((_, dt)=>{
-    if(!ref.current) return
-    const speed = 7
-    const yaw = yawRef.current
-    let mx = Math.sin(yaw)*joy.y + Math.cos(yaw)*joy.x
-    let mz = Math.cos(yaw)*joy.y - Math.sin(yaw)*joy.x
-
-       const nextPos = {
-      x: ref.current.position.x + mx*speed*dt,
-      z: ref.current.position.z - mz*speed*dt
+function Player({ ALL_PLACES, setTrigger, controlsRef }){
+  const group = useRef()
+  const leftLeg = useRef()
+  const rightLeg = useRef()
+  const leftArm = useRef()
+  const rightArm = useRef()
+  const bodyRef = useRef()
+  const walkTime = useRef(0)
+  
+  useFrame((state, dt)=>{
+    if(!group.current) return
+    const mv = controlsRef.current.move
+    const isMoving = mv.x !== 0 || mv.z !== 0
+    
+    if(isMoving){
+      walkTime.current += dt * 8
+      const swing = Math.sin(walkTime.current) * 0.8
+      
+      // LEGS MOVEMENT
+      if(leftLeg.current) leftLeg.current.rotation.x = swing
+      if(rightLeg.current) rightLeg.current.rotation.x = -swing
+      // ARMS opposite to legs
+      if(leftArm.current) leftArm.current.rotation.x = -swing * 0.6
+      if(rightArm.current) rightArm.current.rotation.x = swing * 0.6
+      // BODY BOB
+      if(bodyRef.current) bodyRef.current.position.y = 1.1 + Math.abs(Math.sin(walkTime.current))*0.15
+    } else {
+      // Idle breathing
+      walkTime.current += dt * 2
+      if(bodyRef.current) bodyRef.current.position.y = 1.1 + Math.sin(walkTime.current)*0.02
+      if(leftLeg.current) leftLeg.current.rotation.x *= 0.9
+      if(rightLeg.current) rightLeg.current.rotation.x *= 0.9
     }
 
-    // V2: WORLD BOUNDARY - no more void
+    // MOVEMENT + PROTOCOL
+    const speed = 4
+    const mx = mv.x
+    const mz = mv.z
+    const nextPos = {
+      x: group.current.position.x + mx*speed*dt,
+      z: group.current.position.z - mz*speed*dt
+    }
     keepInsideWorld(nextPos)
-
-    // PROTOCOL: Check collision before moving
     let canMove = true
     for(const place of ALL_PLACES){
       if(place.solid && isColliding(nextPos, place)){
-        canMove = false
-        break
+        canMove = false; break
       }
     }
-
     if(canMove){
-      ref.current.position.x = nextPos.x
-      ref.current.position.z = nextPos.z
+      group.current.position.x = nextPos.x
+      group.current.position.z = nextPos.z
     }
-
-    posRef.current = ref.current.position.clone()
-    ref.current.rotation.y = yaw
-
-    // PROTOCOL: Check triggers
-    const trigger = getNearbyTrigger(posRef.current, ALL_PLACES)
-    onTrigger(trigger)
+    // Face direction
+    if(isMoving){
+      const angle = Math.atan2(mx, mz)
+      group.current.rotation.y = angle
+    }
+    
+    const trig = getNearbyTrigger({x:group.current.position.x, z:group.current.position.z}, ALL_PLACES, 6)
+    setTrigger(trig)
+    
+    state.camera.position.lerp({x:group.current.position.x, y:6, z:group.current.position.z+10}, 0.08)
+    state.camera.lookAt(group.current.position.x, 1, group.current.position.z)
   })
-  return <mesh ref={ref} position={[0,0.9,0]} castShadow><capsuleGeometry args={[0.4,1,4,8]}/><meshStandardMaterial color="#111"/></mesh>
+
+  return (
+    <group ref={group} position={[0,0,0]}>
+      {/* SHADOW */}
+      <mesh position={[0,0.01,0]} rotation={[-Math.PI/2,0,0]}>
+        <circleGeometry args={[0.5,16]}/><meshBasicMaterial color="black" transparent opacity={0.3}/>
+      </mesh>
+
+      {/* LEGS */}
+      <group ref={leftLeg} position={[-0.15,0.4,0]}>
+        <mesh position={[0,0.2,0]} castShadow><capsuleGeometry args={[0.12,0.5,4,8]}/><meshStandardMaterial color="#1a237e"/></mesh>
+        <mesh position={[0,-0.2,0.05]}><boxGeometry args={[0.22,0.1,0.35]}/><meshStandardMaterial color="#111"/></mesh>
+      </group>
+      <group ref={rightLeg} position={[0.15,0.4,0]}>
+        <mesh position={[0,0.2,0]} castShadow><capsuleGeometry args={[0.12,0.5,4,8]}/><meshStandardMaterial color="#1a237e"/></mesh>
+        <mesh position={[0,-0.2,0.05]}><boxGeometry args={[0.22,0.1,0.35]}/><meshStandardMaterial color="#111"/></mesh>
+      </group>
+
+      {/* BODY + ARMS */}
+      <group ref={bodyRef} position={[0,1.1,0]}>
+        <mesh castShadow><boxGeometry args={[0.6,0.7,0.35]}/><meshStandardMaterial color="#ff3d00"/></mesh>
+        {/* ARMS */}
+        <group ref={leftArm} position={[-0.4,0.2,0]}>
+          <mesh position={[0,-0.2,0]} castShadow><capsuleGeometry args={[0.08,0.4,4,8]}/><meshStandardMaterial color="#ffcc99"/></mesh>
+          <mesh position={[0,-0.5,0]}><sphereGeometry args={[0.09]}/><meshStandardMaterial color="#ffcc99"/></mesh>
+        </group>
+        <group ref={rightArm} position={[0.4,0.2,0]}>
+          <mesh position={[0,-0.2,0]} castShadow><capsuleGeometry args={[0.08,0.4,4,8]}/><meshStandardMaterial color="#ffcc99"/></mesh>
+          <mesh position={[0,-0.5,0]}><sphereGeometry args={[0.09]}/><meshStandardMaterial color="#ffcc99"/></mesh>
+        </group>
+        {/* HEAD - FACE */}
+        <group position={[0,0.6,0]}>
+          <mesh castShadow><sphereGeometry args={[0.28,16,16]}/><meshStandardMaterial color="#ffcc99"/></mesh>
+          {/* Eyes */}
+          <mesh position={[-0.08,0.05,0.22]}><sphereGeometry args={[0.04]}/><meshStandardMaterial color="black"/></mesh>
+          <mesh position={[0.08,0.05,0.22]}><sphereGeometry args={[0.04]}/><meshStandardMaterial color="black"/></mesh>
+          {/* Smile */}
+          <mesh position={[0,-0.08,0.22]} rotation={[0,0,0]}><boxGeometry args={[0.12,0.02,0.01]}/><meshStandardMaterial color="black"/></mesh>
+          {/* Cap */}
+          <mesh position={[0,0.2,0]}><cylinderGeometry args={[0.3,0.3,0.12,16]}/><meshStandardMaterial color="#000"/></mesh>
+          <mesh position={[0,0.15,0.18]} rotation={[0.2,0,0]}><boxGeometry args={[0.32,0.02,0.2]}/><meshStandardMaterial color="#000"/></mesh>
+        </group>
+      </group>
+    </group>
+  )
 }
 
 function Cam({ posRef, yawRef }){
